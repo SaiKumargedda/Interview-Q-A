@@ -2,7 +2,7 @@
 
 Keyvault intergration with pipeline and how secrets will be fetched by pipeline and from aks as well and how to azure can connect with each other and if one resource want something from another resource what kind of permission you will give
 
-Task groups (reg this interviewer mentioned how you don’t know this is basic thing but you have not mentioned while I am preparing with you, so along with can you also mention any other topics which I need to know which are used in real time projects which have multiple applications with multiple env and pipelines)
+what are Task groups 
 
 Hpa and CA Configuration and Working with real time
 
