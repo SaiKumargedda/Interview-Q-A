@@ -1,7 +1,3 @@
-==========================
-DEVOPS AZURE AKS INTERVIEW NOTES
-PART 1 – NETWORKING, SECURITY & TERRAFORM
-==========================
 
 1. How can two VNets communicate without VNet Peering?
 
@@ -408,7 +404,430 @@ Application Gateway
 Applications
 
 ------------------------------------------------------------
+==========================
+DEVOPS AZURE AKS INTERVIEW NOTES
+PART 2 – CERTIFICATES, KEY VAULT, MANAGED IDENTITY & CSI DRIVER
+==========================
 
+1. TLS vs SSL
+
+SSL (Secure Sockets Layer)
+• Older protocol.
+• Deprecated due to security vulnerabilities.
+
+TLS (Transport Layer Security)
+• Successor to SSL.
+• Used for HTTPS communication.
+• Provides Encryption, Integrity and Authentication.
+
+Interview Answer:
+Today we use TLS, not SSL. Although people often say "SSL certificate," production environments use TLS certificates.
+
+------------------------------------------------------------
+
+2. What is a Digital Certificate?
+
+A digital certificate is an electronic identity issued by a trusted Certificate Authority (CA). It proves the identity of a server or client and enables encrypted communication.
+
+A certificate contains:
+• Subject (Domain Name)
+• Issuer (Certificate Authority)
+• Public Key
+• Valid From
+• Valid To
+• Serial Number
+• Digital Signature
+• Certificate Chain Information
+
+------------------------------------------------------------
+
+3. Certificate Authorities (CA)
+
+Common Certificate Authorities:
+• DigiCert
+• GlobalSign
+• Entrust
+• Sectigo
+• Let's Encrypt (commonly used for development/non-production)
+
+The CA verifies domain ownership or organization identity and issues a signed certificate.
+
+------------------------------------------------------------
+
+4. TLS Handshake
+
+Step 1:
+Client (Browser/Application)
+↓
+Client Hello
+
+Step 2:
+Server
+↓
+Server Hello
+
+Sends:
+• Server Certificate
+• Public Key
+• Supported TLS Version
+• Cipher Suite
+
+Step 3:
+Client validates:
+• Hostname
+• Expiry
+• Certificate Chain
+• Trusted Root CA
+• Digital Signature
+• Revocation Status (if available)
+
+Step 4:
+Session Keys are negotiated.
+
+Step 5:
+Encrypted HTTPS communication starts.
+
+------------------------------------------------------------
+
+5. Why does the Client validate the Server?
+
+The client must ensure it is communicating with the genuine server and not an attacker.
+
+The browser checks:
+• Hostname matches the requested URL.
+• Certificate is not expired.
+• Certificate chain is valid.
+• Certificate is signed by a trusted CA.
+• Certificate has not been revoked (if checked).
+
+Without these checks, Man-in-the-Middle (MITM) attacks would be possible.
+
+------------------------------------------------------------
+
+6. Does the Server validate the Client?
+
+In Standard TLS:
+• No.
+• The server authenticates the client later using:
+  - Username/Password
+  - OAuth
+  - JWT
+  - API Keys
+  - Session Cookies
+
+In Mutual TLS (mTLS):
+• Yes.
+• Both client and server exchange and validate certificates.
+
+Common mTLS Use Cases:
+• Banking APIs
+• Payment Gateways
+• Government Systems
+• Internal Microservices
+• B2B Integrations
+
+------------------------------------------------------------
+
+7. Keystore vs Truststore
+
+Keystore:
+Contains:
+• Private Key
+• Server (or Client) Certificate
+• Certificate Chain
+
+Purpose:
+Used to present the application's own identity during TLS.
+
+Truststore:
+Contains:
+• Trusted Root CA Certificates
+• Trusted Intermediate CA Certificates (if configured)
+
+Purpose:
+Used to validate certificates presented by the peer.
+
+Important:
+Keystore and Truststore are application-level concepts.
+
+A server application may have both.
+A client application may also have both (especially in mTLS).
+
+------------------------------------------------------------
+
+8. Root CA and Intermediate CA
+
+Certificate Chain:
+
+Root CA
+   ↓
+Intermediate CA
+   ↓
+Server Certificate
+
+Why Intermediate CA?
+
+• Root CA private key is highly sensitive.
+• Root CA remains offline.
+• Intermediate CAs perform day-to-day certificate issuance.
+• If compromised, only the Intermediate CA is replaced.
+
+------------------------------------------------------------
+
+9. How does the Browser trust the Server Certificate?
+
+The browser or operating system maintains a Trusted Root Certificate Store.
+
+When the server presents its certificate:
+
+Browser validates:
+• Hostname
+• Expiry
+• Revocation (if available)
+• Digital Signature
+• Certificate Chain
+
+The browser verifies that the certificate chain ends at a trusted Root CA already present in its trust store.
+
+If all validations succeed:
+Secure TLS connection is established.
+
+------------------------------------------------------------
+
+10. Does Google or Microsoft manually add every website certificate?
+
+No.
+
+Browsers and operating systems DO NOT store certificates for every website.
+
+Instead, they store trusted Root CA certificates.
+
+Examples:
+• DigiCert Root CA
+• GlobalSign Root CA
+• Entrust Root CA
+• Sectigo Root CA
+
+These Root CAs are included through browser/OS updates after strict security audits and compliance reviews.
+
+------------------------------------------------------------
+
+11. Digital Signature Verification
+
+Certificate Authority:
+Signs the certificate using its Private Key.
+
+Browser:
+Uses the CA's Public Key (stored in the trusted Root CA certificate) to verify the signature.
+
+If verification succeeds:
+• Certificate has not been altered.
+• Certificate was issued by a trusted CA.
+
+------------------------------------------------------------
+
+12. Certificate Lifecycle in Enterprise
+
+Security/PKI Team:
+• Purchase certificate.
+• Generate CSR.
+• Get certificate signed.
+• Create PFX.
+
+DevOps Team:
+• Import PFX into Azure Key Vault.
+• Configure Application Gateway.
+• Configure AKS CSI Driver.
+• Assign Managed Identity permissions.
+• Validate HTTPS.
+• Monitor expiry.
+• Rotate certificates.
+
+------------------------------------------------------------
+
+13. Azure Key Vault
+
+Purpose:
+Securely stores:
+• Secrets
+• Keys
+• Certificates
+
+Certificate Formats:
+• .pfx
+• .crt
+• .pem
+
+Benefits:
+• Centralized management.
+• Versioning.
+• Secure storage.
+• RBAC integration.
+• Managed Identity support.
+
+------------------------------------------------------------
+
+14. Application Gateway + Key Vault
+
+Flow:
+
+Security Team
+↓
+Certificate
+
+↓
+
+Azure Key Vault
+
+↓
+
+Managed Identity
+
+↓
+
+Application Gateway
+
+↓
+
+HTTPS Listener
+
+↓
+
+Client
+
+Application Gateway retrieves certificates directly from Key Vault using Managed Identity.
+
+No certificate files are manually copied to Application Gateway.
+
+------------------------------------------------------------
+
+15. AKS + Key Vault + CSI Driver
+
+Flow:
+
+Azure Key Vault
+
+↓
+
+Secrets Store CSI Driver
+
+↓
+
+SecretProviderClass
+
+↓
+
+Mounted Volume
+
+↓
+
+Application Pod
+
+Applications read certificates or secrets from the mounted path.
+
+No hardcoded secrets inside the application.
+
+------------------------------------------------------------
+
+16. Secrets Store CSI Driver
+
+The Secrets Store CSI Driver is an open-source Kubernetes project.
+
+In AKS:
+
+Command:
+
+az aks create --enable-addons azure-keyvault-secrets-provider
+
+Automatically installs:
+• Secrets Store CSI Driver
+• Azure Key Vault Provider
+• Required DaemonSets
+• RBAC
+• CRDs
+
+Verification:
+
+kubectl get pods -n kube-system
+
+Expected Pods:
+• secrets-store-csi-driver
+• provider-azure
+
+------------------------------------------------------------
+
+17. Managed Identity
+
+Managed Identity is an Azure AD identity automatically managed by Azure.
+
+Advantages:
+• No passwords.
+• No client secrets.
+• No certificate rotation.
+• Azure automatically issues OAuth tokens.
+
+Important:
+Creating a Managed Identity DOES NOT automatically grant permissions.
+
+Azure RBAC roles must still be assigned.
+
+Examples:
+• Key Vault Secrets User
+• Key Vault Certificate User
+• Reader
+• Contributor
+
+------------------------------------------------------------
+
+18. System Assigned vs User Assigned Managed Identity
+
+System Assigned:
+• Created with the Azure resource.
+• One identity per resource.
+• Deleted automatically when the resource is deleted.
+
+Example:
+AKS → System Assigned Managed Identity
+
+User Assigned:
+• Independent Azure resource.
+• Can be attached to multiple Azure resources.
+• Survives even if attached resources are deleted.
+
+Example:
+One User Assigned Identity
+↓
+AKS
+VM
+Application Gateway
+Function App
+
+------------------------------------------------------------
+
+19. Managed Identity vs Service Principal
+
+Managed Identity:
+• Azure-managed identity.
+• No secrets.
+• No password rotation.
+• Preferred for Azure resources.
+
+Service Principal:
+• Client ID
+• Client Secret or Certificate
+• Used by workloads outside Azure.
+
+Examples:
+• Azure DevOps
+• Jenkins
+• Terraform on developer laptop
+• Third-party CI/CD tools
+
+------------------------------------------------------------
+
+20. Final Interview Summary
+
+"Our production certificates are obtained by the Security/PKI team and stored securely in Azure Key Vault. Application Gateway accesses the certificates using Managed Identity, while AKS workloads consume secrets and certificates through the Secrets Store CSI Driver. Managed Identities eliminate the need to manage credentials, whereas Service Principals are typically used for external automation such as Azure DevOps or Jenkins. During the TLS handshake, the client validates the server certificate by checking the hostname, expiry, digital signature, certificate chain and trusted Root CA. In mutual TLS, both the client and server exchange and validate certificates. Keystores hold an application's own private key and certificate, while truststores contain trusted CA certificates used to verify peer identities."
 FINAL INTERVIEW SUMMARY
 
 "Our enterprise AKS platform is secured using Azure Entra ID, Azure RBAC, Kubernetes RBAC, Private AKS, NSGs, Azure Firewall, WAF, AGIC, Azure Key Vault, Managed Identity, Network Policies, Defender for Cloud, Azure Policy and Azure Monitor. We use Route Tables and UDRs to route all outbound traffic through Azure Firewall for centralized inspection and security. Infrastructure is provisioned using Terraform with reusable modules following enterprise folder structures."
