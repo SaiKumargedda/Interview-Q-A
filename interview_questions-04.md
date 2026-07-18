@@ -824,10 +824,3 @@ Examples:
 • Third-party CI/CD tools
 
 ------------------------------------------------------------
-
-20. Final Interview Summary
-
-"Our production certificates are obtained by the Security/PKI team and stored securely in Azure Key Vault. Application Gateway accesses the certificates using Managed Identity, while AKS workloads consume secrets and certificates through the Secrets Store CSI Driver. Managed Identities eliminate the need to manage credentials, whereas Service Principals are typically used for external automation such as Azure DevOps or Jenkins. During the TLS handshake, the client validates the server certificate by checking the hostname, expiry, digital signature, certificate chain and trusted Root CA. In mutual TLS, both the client and server exchange and validate certificates. Keystores hold an application's own private key and certificate, while truststores contain trusted CA certificates used to verify peer identities."
-FINAL INTERVIEW SUMMARY
-
-"Our enterprise AKS platform is secured using Azure Entra ID, Azure RBAC, Kubernetes RBAC, Private AKS, NSGs, Azure Firewall, WAF, AGIC, Azure Key Vault, Managed Identity, Network Policies, Defender for Cloud, Azure Policy and Azure Monitor. We use Route Tables and UDRs to route all outbound traffic through Azure Firewall for centralized inspection and security. Infrastructure is provisioned using Terraform with reusable modules following enterprise folder structures."
